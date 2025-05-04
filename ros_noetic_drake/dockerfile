@@ -1,0 +1,74 @@
+# Use the official ROS Noetic base image for Ubuntu 20.04 (Focal)
+FROM ros:noetic-ros-base-focal
+
+# Set the working directory
+WORKDIR /workspace
+
+# Install basic dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    libeigen3-dev \
+    liblz4-dev \
+    libz-dev \
+    python3-vcstool \
+    libspdlog-dev \
+    libx11-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libopengl0 \
+    libglx0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install MUMPS dependencies manually
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libopenblas-dev \
+    liblapack-dev \
+    libscotch-6.0 \
+    libscotch-dev \
+    gfortran \
+    libmumps-dev \
+    libmumps-seq-dev \
+    && wget http://archive.ubuntu.com/ubuntu/pool/universe/m/mumps/libmumps-seq-dev_5.2.1-2build1_amd64.deb \
+    && wget http://archive.ubuntu.com/ubuntu/pool/universe/m/mumps/libmumps-seq-5.2.1_5.2.1-2build1_amd64.deb \
+    && dpkg -i libmumps-seq-5.2.1_5.2.1-2build1_amd64.deb \
+    && dpkg -i libmumps-seq-dev_5.2.1-2build1_amd64.deb \
+    && rm *.deb \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Drake v1.26.0 from GitHub release
+RUN mkdir -p /opt/drake && \
+    wget https://github.com/RobotLocomotion/drake/releases/download/v1.26.0/drake-1.26.0-focal.tar.gz && \
+    tar -xzf drake-1.26.0-focal.tar.gz -C /opt/drake --strip-components=1 && \
+    rm drake-1.26.0-focal.tar.gz
+
+# Set Drake environment variables
+ENV DRAKE_DIR=/opt/drake
+ENV LD_LIBRARY_PATH=/opt/drake/lib:$LD_LIBRARY_PATH
+ENV PATH=/opt/drake/bin:$PATH
+ENV PYTHONPATH=/opt/drake/lib/python3.8/site-packages:$PYTHONPATH
+
+# Clone the drake-external-examples repository
+RUN git clone https://github.com/RobotLocomotion/drake-external-examples.git \
+    && cd drake-external-examples \
+    && git checkout main
+
+# Build drake_cmake_installed example
+RUN cd drake-external-examples/drake_cmake_installed \
+    && mkdir build \
+    && cd build \
+    && cmake -DCMAKE_PREFIX_PATH=/opt/drake .. \
+    && make -j$(nproc)
+
+# Source ROS setup and set Drake environment in bashrc
+RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc && \
+    echo "export DRAKE_DIR=/opt/drake" >> ~/.bashrc && \
+    echo "export LD_LIBRARY_PATH=/opt/drake/lib:\$LD_LIBRARY_PATH" >> ~/.bashrc && \
+    echo "export PATH=/opt/drake/bin:\$PATH" >> ~/.bashrc && \
+    echo "export PYTHONPATH=/opt/drake/lib/python3.8/site-packages:\$PYTHONPATH" >> ~/.bashrc
+
+# (Optional) Set up entry point
+CMD ["bash"]
