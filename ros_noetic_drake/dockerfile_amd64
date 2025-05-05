@@ -24,6 +24,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglx0 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y \
+    gazebo11 \
+    ros-noetic-gazebo-ros-pkgs \
+    ros-noetic-gazebo-ros-control \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install MUMPS dependencies manually
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenblas-dev \
@@ -57,6 +63,7 @@ RUN git clone https://github.com/RobotLocomotion/drake-external-examples.git \
     && cd drake-external-examples \
     && git checkout main
 
+### I think I don't need this, just marking here to be confirmed later
 # Build drake_cmake_installed example
 RUN cd drake-external-examples/drake_cmake_installed \
     && mkdir build \
