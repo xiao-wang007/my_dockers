@@ -30,6 +30,14 @@ RUN apt-get update && apt-get install -y \
     ros-noetic-gazebo-ros-control \
     && rm -rf /var/lib/apt/lists/*
 
+# Install catkin tools (via apt, fallback to pip)
+RUN apt-get update && apt-get install -y python3-catkin-tools || \
+    python3 -m pip install --no-cache-dir --user catkin-tools && \
+    echo 'export PATH=$HOME/.local/bin:$PATH' >> /root/.bashrc
+
+# Create catkin workspace
+RUN mkdir -p /workspace/catkin_ws/src
+
 # Install MUMPS dependencies manually
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenblas-dev \
